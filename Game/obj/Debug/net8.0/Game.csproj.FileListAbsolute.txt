@@ -1,0 +1,11 @@
+C:\Users\danie\Desktop\TestVisual\Game\bin\Debug\net8.0\Game.deps.json
+C:\Users\danie\Desktop\TestVisual\Game\bin\Debug\net8.0\Game.dll
+C:\Users\danie\Desktop\TestVisual\Game\bin\Debug\net8.0\Game.pdb
+C:\Users\danie\Desktop\TestVisual\Game\obj\Debug\net8.0\Game.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\danie\Desktop\TestVisual\Game\obj\Debug\net8.0\Game.AssemblyInfoInputs.cache
+C:\Users\danie\Desktop\TestVisual\Game\obj\Debug\net8.0\Game.AssemblyInfo.cs
+C:\Users\danie\Desktop\TestVisual\Game\obj\Debug\net8.0\Game.csproj.CoreCompileInputs.cache
+C:\Users\danie\Desktop\TestVisual\Game\obj\Debug\net8.0\Game.dll
+C:\Users\danie\Desktop\TestVisual\Game\obj\Debug\net8.0\refint\Game.dll
+C:\Users\danie\Desktop\TestVisual\Game\obj\Debug\net8.0\Game.pdb
+C:\Users\danie\Desktop\TestVisual\Game\obj\Debug\net8.0\ref\Game.dll
