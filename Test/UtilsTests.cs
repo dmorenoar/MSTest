@@ -78,10 +78,10 @@ namespace Tools.Tests
         [DataRow(2, 4, 4)]
         [DataRow(5, 3, 5)]
         [DataRow(6, 6, 6)]
-        public void Max_ShouldReturnExpectedResult_DataDriven(int a, int b, int expected)
+        public void Max_ShouldReturnExpectedResult_DataDriven(int numberOne, int numberTwo, int expected)
         {
             //Act
-            int result = Utils.Max(a, b);
+            int result = Utils.Max(numberOne, numberTwo);
             //Assert
             Assert.AreEqual(expected, result);
         }
@@ -151,3 +151,4 @@ namespace Tools.Tests
 
     }
 }
+
