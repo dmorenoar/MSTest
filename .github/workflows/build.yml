@@ -1,4 +1,4 @@
-name: Build and Analyze C#
+name: SonarCloud Build and Analyze
 
 on:
   push:
@@ -9,43 +9,49 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest  # Usamos Windows, ya que es la plataforma estándar de MSBuild/dotnet
+    name: Build and Analyze
+    runs-on: windows-latest
     
     steps:
-    
-      # 1. Checkout (Necesario para obtener el código)
-      - name: Checkout
-        uses: actions/checkout@v4
+      # 1. Necesitamos Java 17 porque el escáner de SonarCloud corre sobre Java
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          fetch-depth: 0 # Importante para análisis de PR
-          
-      # 2. Setup .NET (Necesario para ejecutar comandos 'dotnet')
+          java-version: 17
+          distribution: 'zulu' 
+
+      # 2. Descargar tu código
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Importante para que SonarCloud compare versiones
+
+      # 3. Preparar .NET (Ajusta la versión a la que uses, ej: 6.x, 7.x, 8.x)
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.x' # Cambia esta versión a la que use tu proyecto (ej. '6.x', '7.x')
-          
-      # --- PASO 3: INICIO DEL ESCANER (BEGIN) ---
-      - name: SonarCloud Begin Analysis
-        uses: SonarSource/sonarcloud-scan-action@master
+          dotnet-version: 8.x
+
+      # 4. Instalar la herramienta oficial de escaneo para .NET
+      - name: Install SonarCloud Scanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      # 5. INICIO DEL ANÁLISIS (BEGIN)
+      # Aquí inyectamos tus claves. Asegúrate que los valores /k y /o sean correctos
+      - name: Begin SonarCloud Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          # Es crucial especificar aquí el key de tu proyecto (el mismo que en sonar-project.properties)
-          projectKey: dmorenoar_MSTest 
-          organization: dmorenoar
+        run: |
+          dotnet sonarscanner begin /k:"dmorenoar_MSTest" /o:"dmorenoar" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
           
-      # --- PASO 4: COMPILACIÓN (BUILD) ---
-      # ¡Esta es la parte que falta y la que causa el error MSB1003!
-      - name: Build the Solution
-        run: dotnet build --no-incremental 
-        # Asegúrate de que este comando se ejecute desde el directorio que contiene tu archivo .sln o .csproj
-        
-      # --- PASO 5: FIN DEL ESCANER (END) ---
-      - name: SonarCloud End Analysis
-        uses: SonarSource/sonarcloud-scan-action@master
-        with:
-          action: end
+      # 6. COMPILAR (BUILD)
+      # Es obligatorio compilar DESPUÉS del 'begin' y ANTES del 'end'
+      - name: Build
+        run: dotnet build --no-incremental
+
+      # 7. FIN DEL ANÁLISIS (END)
+      # Este paso sube el reporte a SonarCloud
+      - name: End SonarCloud Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
