@@ -13,30 +13,24 @@ jobs:
     runs-on: windows-latest
     
     steps:
-      # 1. Necesitamos Java 17 porque el escáner de SonarCloud corre sobre Java
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'zulu' 
 
-      # 2. Descargar tu código
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Importante para que SonarCloud compare versiones
+          fetch-depth: 0
 
-      # 3. Preparar .NET (Ajusta la versión a la que uses, ej: 6.x, 7.x, 8.x)
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.x
 
-      # 4. Instalar la herramienta oficial de escaneo para .NET
       - name: Install SonarCloud Scanner
         run: dotnet tool install --global dotnet-sonarscanner
 
-      # 5. INICIO DEL ANÁLISIS (BEGIN)
-      # Aquí inyectamos tus claves. Asegúrate que los valores /k y /o sean correctos
       - name: Begin SonarCloud Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,13 +38,20 @@ jobs:
         run: |
           dotnet sonarscanner begin /k:"dmorenoar_MSTest" /o:"dmorenoar" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
           
-      # 6. COMPILAR (BUILD)
-      # Es obligatorio compilar DESPUÉS del 'begin' y ANTES del 'end'
+      # --- CAMBIO IMPORTANTE AQUÍ ---
+      # Usamos 'Get-ChildItem' (comando de PowerShell) para encontrar el archivo .sln
+      # y pasárselo al comando dotnet build automáticamente.
       - name: Build
-        run: dotnet build --no-incremental
+        run: |
+          $solution = Get-ChildItem -Path . -Filter *.sln -Recurse | Select-Object -First 1
+          if ($solution) {
+            Write-Host "Solución encontrada: $($solution.FullName)"
+            dotnet build $solution.FullName --no-incremental
+          } else {
+            Write-Error "No se encontró ningún archivo .sln en el repositorio."
+            exit 1
+          }
 
-      # 7. FIN DEL ANÁLISIS (END)
-      # Este paso sube el reporte a SonarCloud
       - name: End SonarCloud Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
