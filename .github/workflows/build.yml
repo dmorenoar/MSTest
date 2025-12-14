@@ -1,47 +1,51 @@
-name: SonarQube
+name: Build and Analyze C#
+
 on:
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
   build:
-    name: Build and analyze
-    runs-on: windows-latest
+    runs-on: windows-latest  # Usamos Windows, ya que es la plataforma estándar de MSBuild/dotnet
+    
     steps:
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+    
+      # 1. Checkout (Necesario para obtener el código)
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          java-version: 17
-          distribution: 'zulu' # Alternative distribution options are available.
-      - uses: actions/checkout@v4
+          fetch-depth: 0 # Importante para análisis de PR
+          
+      # 2. Setup .NET (Necesario para ejecutar comandos 'dotnet')
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - name: Cache SonarQube Cloud packages
-        uses: actions/cache@v4
+          dotnet-version: '8.x' # Cambia esta versión a la que use tu proyecto (ej. '6.x', '7.x')
+          
+      # --- PASO 3: INICIO DEL ESCANER (BEGIN) ---
+      - name: SonarCloud Begin Analysis
+        uses: SonarSource/sonarcloud-scan-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          path: ~\sonar\cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-      - name: Cache SonarQube Cloud scanner
-        id: cache-sonar-scanner
-        uses: actions/cache@v4
+          # Es crucial especificar aquí el key de tu proyecto (el mismo que en sonar-project.properties)
+          projectKey: dmorenoar_MSTest 
+          organization: dmorenoar
+          
+      # --- PASO 4: COMPILACIÓN (BUILD) ---
+      # ¡Esta es la parte que falta y la que causa el error MSB1003!
+      - name: Build the Solution
+        run: dotnet build --no-incremental 
+        # Asegúrate de que este comando se ejecute desde el directorio que contiene tu archivo .sln o .csproj
+        
+      # --- PASO 5: FIN DEL ESCANER (END) ---
+      - name: SonarCloud End Analysis
+        uses: SonarSource/sonarcloud-scan-action@master
         with:
-          path: ${{ runner.temp }}\scanner
-          key: ${{ runner.os }}-sonar-scanner
-          restore-keys: ${{ runner.os }}-sonar-scanner
-      - name: Install SonarQube Cloud scanner
-        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
-        shell: powershell
-        run: |
-          New-Item -Path ${{ runner.temp }}\scanner -ItemType Directory
-          dotnet tool update dotnet-sonarscanner --tool-path ${{ runner.temp }}\scanner
-      - name: Build and analyze
+          action: end
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        shell: powershell
-        run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"dmorenoar_MSTest" /o:"dmorenoar" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-          dotnet build
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
